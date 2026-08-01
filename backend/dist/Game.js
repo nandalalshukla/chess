@@ -1,13 +1,13 @@
 import { WebSocket } from "ws";
 import { Chess } from "chess.js";
-import { GAME_OVER, INIT_GAME } from "./messages.js";
+import { GAME_OVER, INIT_GAME, MOVE } from "./messages.js";
 export class Game {
     player1;
     player2;
     board;
     startTime;
     constructor(player1, player2) {
-        console.log("game created");
+        console.log("Game created");
         this.player1 = player1;
         this.player2 = player2;
         this.board = new Chess();
@@ -28,10 +28,12 @@ export class Game {
         }));
     }
     makeMove(socket, move) {
+        // White can only move when it's White's turn
         if (this.board.turn() === "w" && socket !== this.player1) {
             console.log("It's White's turn.");
             return;
         }
+        // Black can only move when it's Black's turn
         if (this.board.turn() === "b" && socket !== this.player2) {
             console.log("It's Black's turn.");
             return;
@@ -39,11 +41,24 @@ export class Game {
         try {
             this.board.move(move);
         }
-        catch (e) {
-            console.error(e);
+        catch (error) {
+            console.error("Invalid move:", error);
+            return;
         }
+        // Send updated board to BOTH players
+        const moveMessage = JSON.stringify({
+            type: MOVE,
+            payload: {
+                from: move.from,
+                to: move.to,
+                fen: this.board.fen(),
+            },
+        });
+        this.player1.send(moveMessage);
+        this.player2.send(moveMessage);
+        // Check for game over AFTER the move
         if (this.board.isGameOver()) {
-            this.player1.send(JSON.stringify({
+            const gameOverMessage = JSON.stringify({
                 type: GAME_OVER,
                 payload: {
                     winner: this.board.turn() === "w" ? "black" : "white",
@@ -53,32 +68,9 @@ export class Game {
                             ? "stalemate"
                             : "draw",
                 },
-            }));
-            return;
-        }
-        if (this.board.turn() === "b") {
-            console.log("move made by player 1");
-            this.player2.send(JSON.stringify({
-                type: "move",
-                payload: {
-                    from: move.from,
-                    to: move.to,
-                    fen: this.board.fen(),
-                },
-            }));
-            console.log("move sent to player 2");
-        }
-        else {
-            console.log("move made by player 2");
-            this.player1.send(JSON.stringify({
-                type: "move",
-                payload: {
-                    from: move.from,
-                    to: move.to,
-                    fen: this.board.fen(),
-                },
-            }));
-            console.log("move sent to player 1");
+            });
+            this.player1.send(gameOverMessage);
+            this.player2.send(gameOverMessage);
         }
     }
 }

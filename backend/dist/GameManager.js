@@ -18,8 +18,10 @@ export class GameManager {
         this.users = this.users.filter((user) => user !== socket);
     }
     addHandler(socket) {
+        console.log("add handler called");
         socket.on("message", (message) => {
             const msg = JSON.parse(message.toString());
+            console.log("message listener fired", msg);
             if (msg.type === INIT_GAME) {
                 if (this.pendingUser) {
                     const game = new Game(this.pendingUser, socket);

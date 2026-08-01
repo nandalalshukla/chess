@@ -1,11 +1,10 @@
-import { ChessBoard} from "./components/ChessBoard";
-
+import Game from "./components/Game";
 export function App() {
 
 
   return (
     <>
-      <ChessBoard/>
+      <Game/>
     </>
   )
 }

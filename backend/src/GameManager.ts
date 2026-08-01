@@ -18,9 +18,11 @@ export class GameManager {
   removeUser(socket: WebSocket) {
     this.users = this.users.filter((user) => user !== socket);
   }
-  addHandler(socket: WebSocket) {
+    addHandler(socket: WebSocket) {
+      console.log("add handler called");
     socket.on("message", (message) => {
-      const msg = JSON.parse(message.toString());
+        const msg = JSON.parse(message.toString());
+        console.log("message listener fired",msg);
 
       if (msg.type === INIT_GAME) {
         if (this.pendingUser) {

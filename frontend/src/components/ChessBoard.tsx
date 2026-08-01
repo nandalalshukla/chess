@@ -1,9 +1,13 @@
 import { Chessboard } from "react-chessboard";
 
-export const ChessBoard= ()=> {
+export const ChessBoard = () => {
   const chessboardOptions = {
-    // your config options here
+    allowDragging: true,
+
+    showNotation: true,
+
+    animationDurationInMs: 200,
   };
 
   return <Chessboard options={chessboardOptions} />;
-}
+};
