@@ -8,5 +8,14 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@types/ws": "^8.18.1",
+    "chess.js": "^1.4.0",
+    "ws": "^8.21.1"
+  }
 }
