@@ -17,12 +17,14 @@ export declare class Game {
     constructor(player1: Player, player2: Player);
     private getClockPayload;
     private sendToBoth;
+    private sendInitToPlayer;
     private scheduleTimeout;
     private endByTimeout;
     makeMove(playerId: string, socket: WebSocket, move: {
         from: string;
         to: string;
     }): void;
+    restart(): void;
     reconnectPlayer(playerId: string, socket: WebSocket): void;
 }
 export {};

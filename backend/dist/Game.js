@@ -24,22 +24,8 @@ export class Game {
         this.clockStartedAt = Date.now();
         this.timeoutTimer = null;
         this.isOver = false;
-        this.player1.socket.send(JSON.stringify({
-            type: INIT_GAME,
-            payload: {
-                color: "white",
-                fen: this.board.fen(),
-                ...this.getClockPayload(),
-            },
-        }));
-        this.player2.socket.send(JSON.stringify({
-            type: INIT_GAME,
-            payload: {
-                color: "black",
-                fen: this.board.fen(),
-                ...this.getClockPayload(),
-            },
-        }));
+        this.sendInitToPlayer(this.player1, "white");
+        this.sendInitToPlayer(this.player2, "black");
         this.scheduleTimeout();
     }
     getClockPayload() {
@@ -65,6 +51,16 @@ export class Game {
     sendToBoth(message) {
         this.player1.socket.send(message);
         this.player2.socket.send(message);
+    }
+    sendInitToPlayer(player, color) {
+        player.socket.send(JSON.stringify({
+            type: INIT_GAME,
+            payload: {
+                color,
+                fen: this.board.fen(),
+                ...this.getClockPayload(),
+            },
+        }));
     }
     scheduleTimeout() {
         if (this.timeoutTimer) {
@@ -192,6 +188,20 @@ export class Game {
             this.sendToBoth(gameOverMessage);
             return;
         }
+        this.scheduleTimeout();
+    }
+    restart() {
+        if (this.timeoutTimer) {
+            clearTimeout(this.timeoutTimer);
+            this.timeoutTimer = null;
+        }
+        this.board = new Chess();
+        this.whiteTimeMs = 10 * 60 * 1000;
+        this.blackTimeMs = 10 * 60 * 1000;
+        this.clockStartedAt = Date.now();
+        this.isOver = false;
+        this.sendInitToPlayer(this.player1, "white");
+        this.sendInitToPlayer(this.player2, "black");
         this.scheduleTimeout();
     }
     reconnectPlayer(playerId, socket) {

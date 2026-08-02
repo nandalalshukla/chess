@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { Game } from "./Game.js";
-import { INIT_GAME, MOVE, RECONNECT } from "./messages.js";
+import { INIT_GAME, MOVE, RECONNECT, RESTART_GAME } from "./messages.js";
 
 type Player = {
   id: string;
@@ -71,7 +71,7 @@ export class GameManager {
       if (msg.type === MOVE) {
         const playerId = msg.payload.playerId;
         const game = this.games.find(
-          (g) => g.player1.id === playerId  || g.player2.id === playerId,
+          (g) => g.player1.id === playerId || g.player2.id === playerId,
         );
 
         if (!game) {
@@ -94,6 +94,20 @@ export class GameManager {
         }
 
         game.reconnectPlayer(msg.payload.playerId, socket);
+      }
+
+      if (msg.type === RESTART_GAME) {
+        const game = this.games.find(
+          (g) =>
+            g.player1.id === msg.payload.playerId ||
+            g.player2.id === msg.payload.playerId,
+        );
+
+        if (!game) {
+          return;
+        }
+
+        game.restart();
       }
     });
   }

@@ -146,6 +146,21 @@ export default function Game() {
     );
   }
 
+  function restartGame() {
+    if (!socket || !playerColor) return;
+
+    setResultModalOpen(false);
+
+    socket.send(
+      JSON.stringify({
+        type: "restart_game",
+        payload: {
+          playerId: getPlayerId(),
+        },
+      }),
+    );
+  }
+
   function selectSquare(square: string) {
     const piece = chess.get(square as Square);
 
@@ -314,7 +329,10 @@ export default function Game() {
         <section className="mx-auto flex w-full max-w-[700px] flex-col gap-2">
           <PlayerBar color={topColor} label="Opponent" />
 
-          <div className="aspect-square w-full overflow-hidden shadow-2xl">
+          <div
+            className="aspect-square overflow-hidden shadow-2xl"
+            style={{ width: "min(100%, calc(100dvh - 9rem))" }}
+          >
             <Chessboard
               options={{
                 position: fen,
@@ -361,19 +379,39 @@ export default function Game() {
 
             <button
               className="w-full rounded bg-[#81b64c] px-5 py-3 text-lg font-bold text-white shadow transition hover:bg-[#95c95a] disabled:cursor-not-allowed disabled:bg-[#55524d] disabled:text-[#aaa69f]"
-              onClick={startGame}
-              disabled={!connected || waitingForOpponent || !!playerColor}
+              onClick={gameResult ? restartGame : startGame}
+              disabled={
+                !connected ||
+                waitingForOpponent ||
+                (!gameResult && !!playerColor)
+              }
             >
               {waitingForOpponent
                 ? "Waiting..."
-                : playerColor
-                  ? "Game started"
-                  : "Play"}
+                : gameResult
+                  ? "Play again"
+                  : playerColor
+                    ? "Game started"
+                    : "Play"}
             </button>
+
+            {playerColor ? (
+              <button
+                className="w-full rounded border border-[#4f4b45] px-5 py-3 text-base font-bold text-[#f2f2f2] transition hover:bg-[#332f2b] disabled:cursor-not-allowed disabled:text-[#8f8b85]"
+                onClick={restartGame}
+                disabled={!connected}
+              >
+                Restart current game
+              </button>
+            ) : null}
 
             <div className="rounded bg-[#1f1d1a] p-4 text-sm leading-6 text-[#c9c5bd]">
               <div className="font-semibold text-[#f2f2f2]">Connection</div>
-              <div>{connected ? "Connected to live game server" : "Connecting to server"}</div>
+              <div>
+                {connected
+                  ? "Connected to live game server"
+                  : "Connecting to server"}
+              </div>
             </div>
           </div>
         </aside>
@@ -400,6 +438,13 @@ export default function Game() {
 
               <button
                 className="mt-6 w-full rounded bg-[#81b64c] px-5 py-3 text-lg font-bold text-white transition hover:bg-[#95c95a]"
+                onClick={restartGame}
+              >
+                Play again
+              </button>
+
+              <button
+                className="mt-3 w-full rounded border border-[#c9c5bd] px-5 py-3 text-lg font-bold text-[#262421] transition hover:bg-[#ece9df]"
                 onClick={() => setResultModalOpen(false)}
               >
                 Review board

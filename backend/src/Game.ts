@@ -35,27 +35,8 @@ export class Game {
     this.timeoutTimer = null;
     this.isOver = false;
 
-    this.player1.socket.send(
-      JSON.stringify({
-        type: INIT_GAME,
-        payload: {
-          color: "white",
-          fen: this.board.fen(),
-          ...this.getClockPayload(),
-        },
-      }),
-    );
-
-    this.player2.socket.send(
-      JSON.stringify({
-        type: INIT_GAME,
-        payload: {
-          color: "black",
-          fen: this.board.fen(),
-          ...this.getClockPayload(),
-        },
-      }),
-    );
+    this.sendInitToPlayer(this.player1, "white");
+    this.sendInitToPlayer(this.player2, "black");
 
     this.scheduleTimeout();
   }
@@ -88,6 +69,19 @@ export class Game {
     this.player2.socket.send(message);
   }
 
+  private sendInitToPlayer(player: Player, color: "white" | "black") {
+    player.socket.send(
+      JSON.stringify({
+        type: INIT_GAME,
+        payload: {
+          color,
+          fen: this.board.fen(),
+          ...this.getClockPayload(),
+        },
+      }),
+    );
+  }
+
   private scheduleTimeout() {
     if (this.timeoutTimer) {
       clearTimeout(this.timeoutTimer);
@@ -95,11 +89,15 @@ export class Game {
 
     if (this.isOver) return;
 
-    const timeLeft = this.board.turn() === "w" ? this.whiteTimeMs : this.blackTimeMs;
+    const timeLeft =
+      this.board.turn() === "w" ? this.whiteTimeMs : this.blackTimeMs;
 
-    this.timeoutTimer = setTimeout(() => {
-      this.endByTimeout();
-    }, Math.max(0, timeLeft));
+    this.timeoutTimer = setTimeout(
+      () => {
+        this.endByTimeout();
+      },
+      Math.max(0, timeLeft),
+    );
   }
 
   private endByTimeout(clockAlreadyUpdated = false) {
@@ -216,13 +214,13 @@ export class Game {
       }
 
       let winner: "white" | "black" | null = null;
-      let reason="draw";
-      if(this.board.isCheckmate()) {
+      let reason = "draw";
+      if (this.board.isCheckmate()) {
         winner = this.board.turn() === "w" ? "black" : "white";
         reason = "checkmate";
-      }else if(this.board.isStalemate()) {
+      } else if (this.board.isStalemate()) {
         reason = "stalemate";
-      }else if(this.board.isDraw()) {
+      } else if (this.board.isDraw()) {
         reason = "draw";
       }
       const gameOverMessage = JSON.stringify({
@@ -242,10 +240,28 @@ export class Game {
     this.scheduleTimeout();
   }
 
+  restart() {
+    if (this.timeoutTimer) {
+      clearTimeout(this.timeoutTimer);
+      this.timeoutTimer = null;
+    }
+
+    this.board = new Chess();
+    this.whiteTimeMs = 10 * 60 * 1000;
+    this.blackTimeMs = 10 * 60 * 1000;
+    this.clockStartedAt = Date.now();
+    this.isOver = false;
+
+    this.sendInitToPlayer(this.player1, "white");
+    this.sendInitToPlayer(this.player2, "black");
+
+    this.scheduleTimeout();
+  }
+
   reconnectPlayer(playerId: string, socket: WebSocket) {
-    if(this.player1.id === playerId) {
+    if (this.player1.id === playerId) {
       this.player1.socket = socket;
-    } else if(this.player2.id === playerId) {
+    } else if (this.player2.id === playerId) {
       this.player2.socket = socket;
     } else {
       console.error("Player not found for reconnection");
@@ -253,7 +269,7 @@ export class Game {
     }
     socket.send(
       JSON.stringify({
-        type:INIT_GAME,
+        type: INIT_GAME,
         payload: {
           color: this.player1.id === playerId ? "white" : "black",
           fen: this.board.fen(),
@@ -262,5 +278,4 @@ export class Game {
       }),
     );
   }
-    
 }
