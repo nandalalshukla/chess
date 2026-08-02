@@ -7,6 +7,6 @@ wss.on("connection", function connection(ws) {
     gameManager.addUser(ws);
     console.log("add handler calling");
     gameManager.addHandler(ws);
-    ws.on("disconnect", () => gameManager.removeUser(ws));
+    ws.on("close", () => gameManager.removeUser(ws));
 });
 //# sourceMappingURL=index.js.map

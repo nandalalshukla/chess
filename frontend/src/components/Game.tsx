@@ -9,6 +9,7 @@ export default function Game() {
   const [playerColor, setPlayerColor] = useState<"white" | "black" | null>(
     null,
   );
+  const [waitingForOpponent, setWaitingForOpponent] = useState(false);
 
   const [chess] = useState(() => new Chess());
 
@@ -24,8 +25,8 @@ export default function Game() {
 
       switch (message.type) {
         case "init_game":
+          setWaitingForOpponent(false);
           setPlayerColor(message.payload.color);
-
           chess.load(message.payload.fen);
           setFen(message.payload.fen);
           break;
@@ -52,7 +53,11 @@ export default function Game() {
   }, [socket, chess]);
 
   function startGame() {
-    socket?.send(
+    if (!socket || waitingForOpponent || playerColor) return;
+
+    setWaitingForOpponent(true);
+
+    socket.send(
       JSON.stringify({
         type: "init_game",
       }),
@@ -86,8 +91,12 @@ export default function Game() {
 
   return (
     <div>
-      <button className="p-4 bg-gray-800 text-white text-2xl" onClick={startGame} disabled={!connected}>
-        Play
+      <button
+        className="p-4 bg-gray-800 text-white text-2xl disabled:cursor-not-allowed disabled:opacity-60"
+        onClick={startGame}
+        disabled={!connected || waitingForOpponent || !!playerColor}
+      >
+        {waitingForOpponent ? "Waiting..." : playerColor ? "Game started" : "Play"}
       </button>
 
       <p>Color: {playerColor ?? "Waiting..."}</p>

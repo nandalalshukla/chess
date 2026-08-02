@@ -25,6 +25,10 @@ export class GameManager {
         console.log("message listener fired",msg);
 
       if (msg.type === INIT_GAME) {
+          if (this.pendingUser === socket) {
+            console.log("Same user already waiting");
+            return;
+          }
         if (this.pendingUser) {
           const game = new Game(this.pendingUser, socket);
           this.games.push(game);
