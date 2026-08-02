@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
-import { useSocket } from "../hooks/useSocket";
+import { useSocket, getPlayerId } from "../hooks/useSocket";
 
 export default function Game() {
   const { socket, connected } = useSocket();
@@ -10,10 +10,12 @@ export default function Game() {
     null,
   );
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
+    const [gameResult, setGameResult] = useState<string | null>(null);
 
   const [chess] = useState(() => new Chess());
 
   const [fen, setFen] = useState(chess.fen());
+
 
   useEffect(() => {
     if (!socket) return;
@@ -37,7 +39,13 @@ export default function Game() {
           break;
 
         case "game_over":
-          console.log("Game Over");
+          if (message.payload.winner) {
+            setGameResult(
+              `${message.payload.winner} wins by ${message.payload.reason}`,
+            );
+          } else {
+            setGameResult(`Game drawn by ${message.payload.reason}`);
+          }
           break;
 
         default:
@@ -46,6 +54,15 @@ export default function Game() {
     }
 
     socket.addEventListener("message", handleMessage);
+
+    socket.send(
+      JSON.stringify({
+        type: "reconnect",
+        payload: {
+          playerId: getPlayerId(),
+        },
+      }),
+    );
 
     return () => {
       socket.removeEventListener("message", handleMessage);
@@ -60,9 +77,13 @@ export default function Game() {
     socket.send(
       JSON.stringify({
         type: "init_game",
+        payload: {
+          playerId: getPlayerId(),
+        },
       }),
     );
   }
+
 
   function handlePieceDrop({
     sourceSquare,
@@ -71,7 +92,7 @@ export default function Game() {
     sourceSquare: string;
     targetSquare: string | null;
   }) {
-    if (!targetSquare || !socket) {
+    if (!targetSquare || !socket || gameResult) {
       return false;
     }
 
@@ -79,8 +100,11 @@ export default function Game() {
       JSON.stringify({
         type: "move",
         payload: {
-          from: sourceSquare,
-          to: targetSquare,
+          playerId: getPlayerId(),
+          move: {
+            from: sourceSquare,
+            to: targetSquare,
+          },
         },
       }),
     );
@@ -96,11 +120,20 @@ export default function Game() {
         onClick={startGame}
         disabled={!connected || waitingForOpponent || !!playerColor}
       >
-        {waitingForOpponent ? "Waiting..." : playerColor ? "Game started" : "Play"}
+        {waitingForOpponent
+          ? "Waiting..."
+          : playerColor
+            ? "Game started"
+            : "Play"}
       </button>
 
       <p>Color: {playerColor ?? "Waiting..."}</p>
 
+      {gameResult && (
+        <div className="my-4 p-4 bg-yellow-100 text-black text-xl font-bold">
+          {gameResult}
+        </div>
+      )}
       <div className="w-full max-w-[600px] aspect-square">
         <Chessboard
           options={{
